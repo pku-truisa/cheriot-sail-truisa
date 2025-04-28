@@ -248,7 +248,8 @@ function clause execute (CGetType(rd, cs1)) = {
  */
 function clause execute (CGetBase(rd, cs1)) = {
   let capVal = C(cs1);
-  X(rd) = getCapBaseBits(capVal);
+  X(rd) = if isCapabilityMode(capVal) then getCapBaseBits(capVal) else getCapBaseBits(capVal);
+//X(rd) = if isCapabilityMode(capVal) then getCapBaseBits(capVal) else getDescrCapBaseBits(capVal);
   RETIRE_SUCCESS
 }
 
@@ -302,7 +303,8 @@ function clause execute (CSetHigh(cd, cs1, rs2)) = {
  */
 function clause execute (CGetTop(rd, cs1)) = {
   let capVal = C(cs1);
-  let top = getCapTop(capVal);
+  let top = if isCapabilityMode(capVal) then getCapTop(capVal) else getCapTop(capVal);
+//let top = if isCapabilityMode(capVal) then getCapTop(capVal) else getDescrCapTop(capVal);
   X(rd) = to_bits(sizeof(xlen), if top > cap_max_addr then cap_max_addr else top);
   RETIRE_SUCCESS
 }
@@ -323,7 +325,8 @@ function clause execute (CGetTop(rd, cs1)) = {
  */
 function clause execute (CGetLen(rd, cs1)) = {
   let capVal = C(cs1);
-  let len = getCapLength(capVal);
+  let len = if isCapabilityMode(capVal) then getCapLength(capVal) else getCapLength(capVal);
+//let len = if isCapabilityMode(capVal) then getCapLength(capVal) else getDescrCapLength(capVal);
   X(rd) = to_bits(sizeof(xlen), if len > cap_max_addr then cap_max_addr else len);
   RETIRE_SUCCESS
 }
@@ -491,7 +494,8 @@ function clause execute (CIncAddr(cd, cs1, rs2)) = {
   let rs2_val = X(rs2);
 
   let inCap = clearTagIfSealed(cs1_val);
-  let (success, newCap) = incCapAddr(inCap, rs2_val);
+  let (success, newCap) = if isCapabilityMode(cs1_val) then incCapAddr(inCap, rs2_val) else (false, null_cap);
+//let (success, newCap) = if isCapabilityMode(cs1_val) then incCapAddr(inCap, rs2_val) else incDescrCapAddr(inCap, rs2_val);
 
   C(cd) = clearTagIf(newCap, not(success));
   RETIRE_SUCCESS
@@ -511,8 +515,8 @@ function clause execute (CIncAddrImmediate(cd, cs1, imm)) = {
   let immBits : xlenbits = sign_extend(imm);
 
   let inCap = clearTagIfSealed(cs1_val);
-  let (success, newCap) = incCapAddr(inCap, immBits);
-
+  let (success, newCap) = if isCapabilityMode(cs1_val) then incCapAddr(inCap, immBits) else (false, null_cap);
+//let (success, newCap) = if isCapabilityMode(cs1_val) then incCapAddr(inCap, immBits) else incDescrCapAddr(inCap, immBits);
   C(cd) = clearTagIf(newCap, not(success));
   RETIRE_SUCCESS
 }
@@ -531,8 +535,8 @@ function clause execute (CSetAddr(cd, cs1, rs2)) = {
   let rs2_val = X(rs2);
 
   let inCap = clearTagIfSealed(cs1_val);
-  let (representable, newCap) = setCapAddr(inCap, rs2_val);
-
+  let (representable, newCap) = if isCapabilityMode(cs1_val) then setCapAddr(inCap, rs2_val) else (false, null_cap);
+//let (representable, newCap) = if isCapabilityMode(cs1_val) then setCapAddr(inCap, rs2_val) else setDescrCapAddr(inCap, rs2_val);
   C(cd) = clearTagIf(newCap, not(representable));
   RETIRE_SUCCESS
 }
@@ -567,7 +571,7 @@ function clause execute (CSetBounds(cd, cs1, rs2)) = {
 
   let newBase = cs1_val.address;
   let newLen  = rs2_val;
-  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen));
+  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen)) & isCapabilityMode(cs1_val);
 
   let inCap = clearTagIfSealed(cs1_val);
   let (_, newCap) = setCapBounds(inCap, newBase, newLen);
@@ -595,7 +599,7 @@ function clause execute (CSetBoundsImmediate(cd, cs1, uimm)) = {
 
   let newBase = cs1_val.address;
   let newLen : CapAddrBits = zero_extend(uimm);
-  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen));
+  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen)) & isCapabilityMode(cs1_val);
 
   let inCap = clearTagIfSealed(cs1_val);
   let (_, newCap) = setCapBounds(inCap, newBase, newLen);
@@ -625,7 +629,7 @@ function clause execute (CSetBoundsExact(cd, cs1, rs2)) = {
 
   let newBase = cs1_val.address;
   let newLen = X(rs2);
-  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen));
+  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen)) & isCapabilityMode(cs1_val);
 
   let inCap = clearTagIfSealed(cs1_val);
   let (exact, newCap) = setCapBounds(inCap, newBase, newLen);
@@ -663,7 +667,7 @@ function clause execute (CSetBoundsRoundDown(cd, cs1, rs2)) = {
 
   let newBase = cs1_val.address;
   let newLen = rs2_val;
-  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen));
+  let inBounds = inCapBounds(cs1_val, newBase, unsigned(newLen)) & isCapabilityMode(cs1_val);
   let inCap = clearTagIfSealed(cs1_val);
   let newCap = setCapBoundsRoundDown(inCap, newBase, newLen);
   C(cd) = clearTagIf(newCap, not(inBounds));
@@ -735,8 +739,8 @@ function clause execute (CTestSubset(rd, cs1, cs2)) = {
   let cs1_val = C(cs1);
   let cs2_val = C(cs2);
 
-  let (cs2_base, cs2_top) = getCapBounds(cs2_val);
-  let (cs1_base, cs1_top) = getCapBounds(cs1_val);
+  let (cs2_base, cs2_top) = if isCapabilityMode(cs2_val) then getCapBounds(cs2_val) else getCapBounds(cs2_val);
+  let (cs1_base, cs1_top) = if isCapabilityMode(cs1_val) then getCapBounds(cs1_val) else getCapBounds(cs1_val);
   let cs2_perms = getCapPerms(cs2_val);
   let cs1_perms = getCapPerms(cs1_val);
 
@@ -780,7 +784,7 @@ function clause execute (CSeal(cd, cs1, cs2)) = {
   let cs2_val = C(cs2);
 
   let cs2_addr = unsigned(cs2_val.address);
-  let (cs2_base, cs2_top) = getCapBounds(cs2_val);
+  let (cs2_base, cs2_top) = if isCapabilityMode(cs2_val) then getCapBounds(cs2_val) else getCapBounds(cs2_val);
 
   let isPermittedOtype : bool =
     if cs1_val.permit_execute then
@@ -825,10 +829,11 @@ function clause execute (CUnseal(cd, cs1, cs2)) = {
   let cs1_val = C(cs1);
   let cs2_val = C(cs2);
   let cs2_addr = unsigned(cs2_val.address);
+  let inBounds = if isCapabilityMode(cs2_val) then inCapBounds(cs2_val, zero_extend(cs1_val.otype), 1) else inCapBounds(cs2_val, zero_extend(cs1_val.otype), 1);
   let permitted = cs2_val.tag
                 & isCapSealed(cs1_val)
                 & not(isCapSealed(cs2_val))
-                & inCapBounds(cs2_val, zero_extend(cs1_val.otype), 1)
+                & inBounds
                 & cs2_val.permit_unseal;
   let new_global = cs1_val.global & cs2_val.global;
   let newCap = {unsealCap(cs1_val) with global=new_global};
@@ -858,6 +863,8 @@ function clause execute LoadCapImm(cd, cs1, imm) = {
   let offset : xlenbits = sign_extend(imm);
   let auth_val = C(cs1);
   let vaddrBits = auth_val.address + offset;
+  let inBounds = if isCapabilityMode(auth_val) then inCapBounds(auth_val, vaddrBits, cap_size) else inCapBounds(auth_val, vaddrBits, cap_size);
+//let inBounds = if isCapabilityMode(auth_val) then inCapBounds(auth_val, vaddrBits, cap_size) else inDescrCapBounds(auth_val, vaddrBits, cap_size);
   if not(auth_val.tag) then {
     handle_cheri_reg_exception(CapEx_TagViolation, cs1);
     RETIRE_FAIL
@@ -867,7 +874,7 @@ function clause execute LoadCapImm(cd, cs1, imm) = {
   } else if not (auth_val.permit_load) then {
     handle_cheri_reg_exception(CapEx_PermitLoadViolation, cs1);
     RETIRE_FAIL
-  } else if not(inCapBounds(auth_val, vaddrBits, cap_size)) then {
+  } else if not(inBounds) then {
     handle_cheri_reg_exception(CapEx_BoundsViolation, cs1);
     RETIRE_FAIL
   } else if not(is_aligned_addr(vaddrBits, cap_size)) then {
@@ -953,6 +960,8 @@ function clause execute StoreCapImm(cs2, cs1, imm) = {
   let auth_val = C(cs1);
   let vaddrBits = auth_val.address + offset;
   let cs2_val = C(cs2);
+  let inBounds = if isCapabilityMode(auth_val) then inCapBounds(auth_val, vaddrBits, cap_size) else inCapBounds(auth_val, vaddrBits, cap_size);
+//let inBounds = if isCapabilityMode(auth_val) then inCapBounds(auth_val, vaddrBits, cap_size) else inDescrCapBounds(auth_val, vaddrBits, cap_size);
   if not(auth_val.tag) then {
     handle_cheri_reg_exception(CapEx_TagViolation, cs1);
     RETIRE_FAIL
@@ -965,7 +974,7 @@ function clause execute StoreCapImm(cs2, cs1, imm) = {
   } else if not (auth_val.permit_load_store_cap) & cs2_val.tag then {
     handle_cheri_reg_exception(CapEx_PermitStoreCapViolation, cs1);
     RETIRE_FAIL
-  } else if not(inCapBounds(auth_val, vaddrBits, cap_size)) then {
+  } else if not(inBounds) then {
     handle_cheri_reg_exception(CapEx_BoundsViolation, cs1);
     RETIRE_FAIL
   } else if not(is_aligned_addr(vaddrBits, cap_size)) then {
