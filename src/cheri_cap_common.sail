@@ -312,7 +312,8 @@ function encCapabilityToCapability(t,c) : (bool, EncCapability) -> Capability = 
   let otype = (if isExe | c.cotype == 0b000 then 0b0 else 0b1) @ c.cotype;
   /* The 4-bit exponent is expanded to 5 bits, using 0xf to encode a cap_max_E
     value that enables representing the entire address space. */
-  let E = if c.cE == 0xf then cap_max_E_bits else zero_extend(c.cE);
+  let E = if c.mode == 0b0 then (if c.cE == 0xf then cap_max_E_bits else zero_extend(c.cE))
+          else (c.cE[2..0] @ c.B[8..7]);
   return struct {
     tag                    = t,
     perm_user0             = perm_user0            ,
@@ -329,7 +330,7 @@ function encCapabilityToCapability(t,c) : (bool, EncCapability) -> Capability = 
     global                 = global                ,
     cmode                  = c.mode,  /* 0: Capability; 1: DescrCap */
     dmode                  = c.cE[3..3], /* 0: DescrCapability; 1: Descritptor */
-    E                      = if bit_to_bool(c.mode[0]) then c.cE[2..0] @ c.B[8..7] else E, /* 1: E in enDescriptor */
+    E                      = E,
     B                      = c.B,
     T                      = c.T,
     otype                  = otype,
@@ -386,11 +387,13 @@ function capToEncCap(cap) : Capability -> EncCapability = {
     cperms[1] = bool_to_bit(cap.permit_seal);
     cperms[0] = bool_to_bit(cap.permit_unseal);
   };
+  let cE = if cap.cmode == 0b0 then (if cap.E == cap_max_E_bits then 0xf else cap.E[3..0])
+           else (cap.dmode @ cap.E[4..2]);
   return struct {
     cperms = cperms,
     mode = cap.cmode,
     cotype = cap.otype[2..0], /* truncate otype when compressing */
-    cE = if cap.E == cap_max_E_bits then 0xf else cap.E[3..0],
+    cE = cE,
     T = cap.T,
     B = cap.B,
     address = cap.address
