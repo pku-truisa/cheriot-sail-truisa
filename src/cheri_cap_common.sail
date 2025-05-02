@@ -164,7 +164,8 @@ struct Capability = {
   permit_store           : bool,
   permit_load_global     : bool,
   global                 : bool,
-  mode                   : bits(1), /* 0: Capability; 1: DescrCap */
+  cmode                  : bits(1), /* 0: Capability; 1: DescrCap */
+  dmode                  : bits(1), /* 0: DescrCapability; 1: Descritptor */
   E                      : bits(cap_E_width),
   B                      : bits(cap_mantissa_width),
   T                      : bits(cap_mantissa_width),
@@ -187,7 +188,8 @@ let null_cap : Capability = struct {
   permit_store           = false,
   permit_load_global     = false,
   global                 = false,
-  mode                   = zeros(), /* 0: Capability; 1: DescrCap */
+  cmode                  = zeros(), /* 0: Capability; 1: DescrCap */
+  dmode                  = zeros(), /* 0: DescrCapability; 1: Descritptor */
   B                      = zeros(),
   T                      = zeros(),
   E                      = zeros(),
@@ -241,7 +243,7 @@ let root_cap_seal : Capability = {
  * Returns whether the given capability is original capability mode.
  */
 function isCapabilityMode(cap) : Capability -> bool = {
-  not(bit_to_bool(cap.mode[0]))
+  not(bit_to_bool(cap.cmode[0]))
 }
 
 /*! Partially decompress a capability from bits to a [Capability] struct.
@@ -325,8 +327,9 @@ function encCapabilityToCapability(t,c) : (bool, EncCapability) -> Capability = 
     permit_store           = permit_store          ,
     permit_load_global     = permit_load_global    ,
     global                 = global                ,
-    mode                   = c.mode,
-    E                      = E,
+    cmode                  = c.mode,  /* 0: Capability; 1: DescrCap */
+    dmode                  = c.cE[3..3], /* 0: DescrCapability; 1: Descritptor */
+    E                      = if bit_to_bool(c.mode[0]) then c.cE[2..0] @ c.B[8..7] else E, /* 1: E in enDescriptor */
     B                      = c.B,
     T                      = c.T,
     otype                  = otype,
@@ -385,7 +388,7 @@ function capToEncCap(cap) : Capability -> EncCapability = {
   };
   return struct {
     cperms = cperms,
-    mode = cap.mode,
+    mode = cap.cmode,
     cotype = cap.otype[2..0], /* truncate otype when compressing */
     cE = if cap.E == cap_max_E_bits then 0xf else cap.E[3..0],
     T = cap.T,

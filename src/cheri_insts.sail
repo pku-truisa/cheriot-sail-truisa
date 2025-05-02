@@ -248,7 +248,8 @@ function clause execute (CGetType(rd, cs1)) = {
  */
 function clause execute (CGetBase(rd, cs1)) = {
   let capVal = C(cs1);
-  X(rd) = if isCapabilityMode(capVal) then getCapBaseBits(capVal) else getDescrCapBaseBits(capVal);
+  X(rd) = if isCapabilityMode(capVal) then getCapBaseBits(capVal) else getCapBaseBits(capVal);
+//  X(rd) = if isCapabilityMode(capVal) then getCapBaseBits(capVal) else getDescrCapBaseBits(capVal);
   RETIRE_SUCCESS
 }
 
