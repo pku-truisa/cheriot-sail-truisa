@@ -15,18 +15,19 @@
 
 /* idealized generic DLB entry to model fence.vm and also speed up simulation. */
 
-val match_DLB_Entry : (bits(cap_E_width), CapAddrBits, Descriptor) > bool
-function match_DLBEntry(expon, addr, entry) =
+val match_DLBEntry : (bits(cap_E_width), CapAddrBits, Descriptor) -> bool
+function match_DLBEntry(expon, addr, entry) = {
   let centroidIn  = calcCentroid(expon, addr) in
   let centroidEntry = calcDescrCentroid(entry) in
   ( 
-    centroidIn == CentroidEntry
+    centroidIn == centroidEntry
   )
+}
 
 val lookup_DLB : (bits(cap_E_width), CapAddrBits) -> (bool, Descriptor)
 function lookup_DLB(expon, addr) = {
-    if match_DLB_Entry(expoin, addr, DLBEntry) then
-      (true, DLBEntry)
+    if match_DLBEntry(expon, addr, DLBEntry0) then
+      (true, DLBEntry0)
     else
       (false, null_descr)
 }
@@ -34,12 +35,12 @@ function lookup_DLB(expon, addr) = {
 val flush_DLB : (bool, bits(cap_E_width), CapAddrBits) -> unit
 function flush_DLB(full, expon, addr) = {
   if full then
-    DLBEntry = null_descr
-  else if match_DLB_Entry(expoin, addr, DLBEntry) then
-    DLBEntry = null_descr
+    DLBEntry0 = null_descr
+  else if match_DLBEntry(expon, addr, DLBEntry0) then
+    DLBEntry0 = null_descr
 }
 
 val write_DLB : Descriptor -> unit
-function write_DLB : (ent) = {
-  DLBEntry = ent
+function write_DLB(ent) = {
+  DLBEntry0 = ent
 }

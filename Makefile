@@ -72,7 +72,11 @@ PRELUDE = $(SAIL_RISCV_MODEL_DIR)/prelude.sail \
           $(SAIL_CHERI_MODEL_DIR)/cheri_cap_common.sail \
           $(SAIL_CHERI_MODEL_DIR)/cheri_mem_metadata.sail \
           $(SAIL_RISCV_MODEL_DIR)/prelude_mem.sail
-# PRELUDE += $(SAIL_CHERI_MODEL_DIR)/truisa_descr_common.sail
+
+ PRELUDE += $(SAIL_CHERI_MODEL_DIR)/truisa_prelude.sail \
+            $(SAIL_CHERI_MODEL_DIR)/truisa_dlb.sail \
+			$(SAIL_CHERI_MODEL_DIR)/truisa_descr_common.sail
+            
 
 SAIL_REGS_SRCS = $(SAIL_CHERI_MODEL_DIR)/cheri_reg_type.sail \
                  $(SAIL_RISCV_MODEL_DIR)/riscv_csr_map.sail \

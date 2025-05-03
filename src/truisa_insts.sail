@@ -37,7 +37,7 @@ mapping clause assembly = TFENCE_VMA(cs1)
 union clause ast = TDLBRW : unit
 
 mapping clause encdec = TDLBRW
-  <-> 0b0001010 @ 0b00000 @0bcs1 @0b000 @0b00000 @0b0001111
+  <-> 0b0001010 @ 0b00000 @cs1 @0b000 @0b00000 @0b0001111
 
 function clause execute (TDLBRW) = {
   DLBWriteEntry(OLBFIFO);
@@ -59,7 +59,7 @@ function clause execute (TSETDESCRIPTOR(cd, rs1, rs2)) = {
     handle_cheri_reg_exception(CapEx_DescriptorViolation, cs1);
     RETIRE_FAIL
   } else {
-    C(cd) = buildDescriptor(cs1_val, 0b0 @ len); /* return Capability with tag clear if BuildDescriptor cause Error
+    C(cd) = buildDescriptor(cs1_val, 0b0 @ len); /* return Capability with tag clear if BuildDescriptor cause Error */
     RETIRE_SUCCESS
   }
 }
