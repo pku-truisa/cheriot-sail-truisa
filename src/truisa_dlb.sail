@@ -32,9 +32,9 @@ function lookup_DLB(expon, addr) = {
       (false, null_descr)
 }
 
-val flush_DLB : (bool, bits(cap_E_width), CapAddrBits) -> unit
+val flush_DLB : (bits(1), bits(cap_E_width), CapAddrBits) -> unit
 function flush_DLB(full, expon, addr) = {
-  if full then
+  if full == 0b1 then
     DLBEntry0 = null_descr
   else if match_DLBEntry(expon, addr, DLBEntry0) then
     DLBEntry0 = null_descr

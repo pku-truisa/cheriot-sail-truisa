@@ -31,6 +31,7 @@ SAIL_DEFAULT_INST = $(SAIL_RISCV_MODEL_DIR)/riscv_insts_base.sail \
                     $(SAIL_CHERI_MODEL_DIR)/cheri_insts_begin.sail \
                     $(SAIL_CHERI_MODEL_DIR)/cheri_insts.sail \
                     $(SAIL_CHERI_MODEL_DIR)/cheri_insts_cext.sail \
+					$(SAIL_CHERI_MODEL_DIR)/truisa_insts.sail \
                     $(SAIL_CHERI_MODEL_DIR)/cheri_insts_end.sail
 # $(SAIL_FD_INST) \
 # $(SAIL_RISCV_MODEL_DIR)/riscv_insts_aext.sail

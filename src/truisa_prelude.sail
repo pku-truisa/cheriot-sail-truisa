@@ -66,7 +66,7 @@ struct Descriptor = {
 register MDDLBC    : Capability
 register DLBEntry0 : Descriptor
 
-function capToDescriptor(cap) : Capability -> Descriptor = {
+function capDescrToDescriptor(cap) : Capability -> Descriptor = {
   let temp : bits(50) = cap.B @ cap.T @ cap.address;
   return struct {
     tag                    = cap.tag,
@@ -88,6 +88,33 @@ function capToDescriptor(cap) : Capability -> Descriptor = {
     E                      = cap.E,
     base                   = temp[47..24],
     bound                  = temp[23..0]
+  }
+}
+
+
+function descrToCapDescr(descr) : Descriptor -> Capability = {
+  let temp : bits(53) = descr.E @ descr.base @ descr.bound;
+  return struct {
+    tag                    = descr.tag,
+    perm_user0             = descr.perm_user0            ,
+    permit_seal            = descr.permit_seal           ,
+    permit_unseal          = descr.permit_unseal         ,
+    permit_execute         = descr.permit_execute        ,
+    access_system_regs     = descr.access_system_regs    ,
+    permit_load_store_cap  = descr.permit_load_store_cap ,
+    permit_load            = descr.permit_load           ,
+    permit_store_local_cap = descr.permit_store_local_cap,
+    permit_load_mutable    = descr.permit_load_mutable   ,
+    permit_store           = descr.permit_store          ,
+    permit_load_global     = descr.permit_load_global    ,
+    global                 = descr.global                ,
+    cmode                  = descr.cmode,
+    dmode                  = descr.dmode,
+    otype                  = descr.otype,
+    E                      = descr.E,
+    B                      = temp[49..41],
+    T                      = temp[40..32],
+    address                = temp[31..0]
   }
 }
 
@@ -161,7 +188,7 @@ function calcCapCentroid(cap) : Capability -> CapAddrBits = {
 }
 
 function calcDescrCentroid(descr) : Descriptor -> CapAddrBits = {
-  let a : CapAddrBits = sign_extend(descr.base);
+  let a : CapAddrBits = zero_extend(descr.base);
   let e = calcDescrE(descr.base, descr.bound);
   calcCentroid(e, a)
 }
