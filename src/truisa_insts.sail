@@ -57,11 +57,39 @@ mapping clause encdec = TSETDESCRIPTOR(cd, cs1, rs2)
 function clause execute TSETDESCRIPTOR(cd, cs1, rs2) = {
   let cs1_val = C(cs1);
   let bnd = X(rs2);
-  let descr = buildDescriptor(cs1_val, bnd);
 
-  C(cd) = descrToCapDescr(descr);
-  RETIRE_SUCCESS
+  if not(isCapabilityMode(cs1_val)) & not(hasValidDescriptor(cs1_val.E, cs1_val.address)) then {
+    handle_cheri_reg_exception(CapEx_BoundsViolation, cs1);
+    RETIRE_FAIL
+  } else {  
+    let descrcap = setDescriptor(cs1_val, bnd);
+    C(cd) = descrcap;
+    RETIRE_SUCCESS
+  }
 }
 
 mapping clause assembly = TSETDESCRIPTOR(cd, cs1, rs2)
   <-> "tsetdescr" ^ spc() ^ cap_reg_name(cd) ^ sep() ^ reg_name(cs1) ^ sep() ^ reg_name(rs2)
+
+/* ****************************************************************** */
+union clause ast = TBUILDDESCRIPTOR : (regidx, regidx, regidx)
+
+mapping clause encdec = TBUILDDESCRIPTOR(cd, cs1, rs2)
+  <-> 0b0000101 @ rs2 @ cs1 @ 0b011 @ cd @ 0b0001111
+
+function clause execute TBUILDDESCRIPTOR(cd, cs1, rs2) = {
+  let cs1_val = C(cs1);
+  let bnd = X(rs2);
+  if not(isCapabilityMode(cs1_val)) & not(hasValidDescriptor(cs1_val.E, cs1_val.address)) then {
+    handle_cheri_reg_exception(CapEx_BoundsViolation, cs1);
+    RETIRE_FAIL
+  } else {  
+    let descr = buildDescriptor(cs1_val, bnd);
+
+    C(cd) = descrToCapDescr(descr);
+    RETIRE_SUCCESS
+  }
+}
+
+mapping clause assembly = TBUILDDESCRIPTOR(cd, cs1, rs2)
+  <-> "tbuilddescr" ^ spc() ^ cap_reg_name(cd) ^ sep() ^ reg_name(cs1) ^ sep() ^ reg_name(rs2)

@@ -128,12 +128,20 @@ function capToDescriptor(cap) : Capability -> Descriptor = {
 
 function buildDescriptor(cap, bnd) : (Capability, CapAddrBits) -> Descriptor = {
   /* TODO: descriptorViolation */
-  let descr = capToDescriptor(cap);
+  let base = if isCapabilityMode(cap) then getCapBaseBits(cap) else getDescrCapBaseBits(cap);
+  let newbase = truncate(base, descr_addr_width);
   let newbnd = truncate(bnd, descr_addr_width);
+  let descr = capToDescriptor(cap);
 
   if unsigned(newbnd) <= unsigned(descr.bound)  then  
-    { descr with E = calcDescrE(descr.base, newbnd), bound = newbnd}
+    { descr with E = calcDescrE(descr.base, newbnd), base = newbase, bound = newbnd, cmode = 0b1, dmode = 0b1}
   else 
-    { descr with bound = zeros() }/* invalid descritpor */
+    { descr with base = newbase, bound = zeros(), cmode = 0b1, dmode = 0b1 } /* invalid descritpor */
   
 }
+
+function setDescriptor(cap, bnd) : (Capability, CapAddrBits) -> Capability =
+  /* TODO: descriptorViolation */
+  let newbase : DescrAddrBits = truncate(cap.address, descr_addr_width) in
+  let newbnd  : DescrAddrBits = truncate(bnd, descr_addr_width) in
+  { cap with E = calcDescrE(newbase, newbnd) , cmode = 0b1, dmode = 0b0 }
