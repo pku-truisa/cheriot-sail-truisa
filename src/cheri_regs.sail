@@ -128,6 +128,7 @@ function ext_init_regs () = {
   PCC = root_cap_exe;
   nextPCC = root_cap_exe;
 
+  MDDLBC = null_cap;
   MTCC = root_cap_exe;
   MTDC = root_cap_mem;
   MScratchC = root_cap_seal;
@@ -211,6 +212,7 @@ function string_of_capreg_idx(reg : capreg_idx) -> string =
   match reg {
     0b0 @ greg : bits(5) => "c" ^ dec_str(unsigned(greg)) ^ "/" ^ cap_reg_name_abi(greg),
     0b100000 => "PCC",
+    0b111011 => "MDDLBC",
     0b111100 => "MTCC",
     0b111101 => "MTDC",
     0b111110 => "MScratchC",

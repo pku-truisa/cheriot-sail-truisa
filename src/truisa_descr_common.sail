@@ -23,8 +23,8 @@ function getDescriptor(expon, addr) : (bits(cap_E_width), CapAddrBits) -> (bool,
 }
 
 function hasValidDescriptor(expon, addr) : (bits(cap_E_width), CapAddrBits) -> bool =
-  let (v, _) = getDescriptor(expon, addr) in
-  v
+  let (v, descr) = getDescriptor(expon, addr) in
+  v & ( unsigned(descr.bound) != 0 )
 
 /*!
  * Returns the decoded base and top in descriptor of the given descriptor Cap.
