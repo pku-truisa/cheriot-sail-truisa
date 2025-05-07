@@ -34,19 +34,19 @@ mapping clause assembly = TFENCE_VMA(cs1)
   <-> "tfence.vma" ^ spc() ^ reg_name(cs1)
 
 /* ****************************************************************** */
-union clause ast = TDLBRW : unit
+union clause ast = TDLBRW : (regidx)
 
-mapping clause encdec = TDLBRW()
-  <-> 0b0001010 @ 0b00000 @ 0b00000 @ 0b000 @ 0b00000 @ 0b0001111
+mapping clause encdec = TDLBRW(cs1)
+  <-> 0b0001010 @ 0b00000 @ cs1 @ 0b000 @ 0b00000 @ 0b0001111
 
-function clause execute TDLBRW() = {
+function clause execute TDLBRW(cs1) = {
   let descr = capToDescriptor(MDDLBC);
   write_DLB(descr);
   RETIRE_SUCCESS
 }
 
-mapping clause assembly = TDLBRW()
-  <-> "tdlbrw"
+mapping clause assembly = TDLBRW(cs1)
+  <-> "tdlbrw" ^ spc() ^ reg_name(cs1)
 
 /* ****************************************************************** */
 union clause ast = TSETDESCRIPTOR : (regidx, regidx, regidx)
