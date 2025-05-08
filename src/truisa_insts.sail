@@ -85,8 +85,10 @@ function clause execute TBUILDDESCRIPTOR(cd, cs1, rs2) = {
     RETIRE_FAIL
   } else {  
     let descr = buildDescriptor(cs1_val, bnd);
+    let descrcap = setDescriptor(cs1_val, bnd);
 
-    C(cd) = descrToCapDescr(descr);
+    MDDLBC = descrToCapDescr(descr);
+    C(cd) = descrcap;
     RETIRE_SUCCESS
   }
 }
