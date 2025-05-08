@@ -1,0 +1,136 @@
+[[cheriot-truisa]]
+== 简介
+
+小型的嵌入式处理器给几乎没给安全特性保留设计空间，而且必须经常运行用不安全语言编写的代码，并且越来越多地暴露在充满敌意的互联网上。
+Cheriot是最前沿的在指令系统架构上解决内存安全性问题的前言研究项目。
+Cheriot采用CHERI的Low-Fat Pointer边界定义方法，对于大内存对象存在内部碎片大的问题
+Cheriot-centroid项目在Cheriot基础上加入基于Centroid的内存对象描述符机制，可以有效地解决上述问题，并对未来高效解决时间安全性提供潜在支持。
+
+系统安全应该满足一下的条件：
+
+* 单调性 Monotonic 新构建的引用不会比其原始引用拥有更多的权限（应该权限更少）。
+* 空间安全性 Saptially Safe 对内存的引用授权访问的内存位置集在引用构建时确定。
+* 时间安全性 Temporal Safe 对内存区域的引用在内存被重新用于不同分配时将不再可用。
+
+== RV32T/RV64T的权能指针
+
+Cheriot-centroid的主要增强功能：
+
+* 增加Centroid编码机制，可高效生成对象描述符的标识ID。
+* 增加内存对象描述符的定义。
+* 增加描述符旁视缓冲器DLB设计，采用软件管理方法。
+* 增加DLB的SCR寄存器MDLBDC（27号寄存器），用于向DLB中插入新的描述符条目。
+* 增加描述符生成和DLB管理的三条指令
+* 增加DLB缺失的例外复用BoundsViolation
+
+cheriot-centroid在PCC相关的定义、指令和功能上不做任何改变。
+
+TruISA定义了2种类型的权能指针：
+
+规整块权能指针（Block-Type, B-Type）：复用Cheriot的定义。用户程序可以通过CSetBound和CSetBoundImm指令设定，需要符合单调性原则。该类型权能指针与cheriot定义相同。
+
+描述符权能指针（Slot-Type, S-Type）：在对象描述符表中存在相对应的描述符表项，采用形心（Centroid）权能的哈希对象表。通过指针权能和线性地址由硬件计算形心标识。
+
+权能指针类型算则的基本原则是，对小数据对象（设定一定的阈值）和规整数据对象采用B-Type指针类型，对大数据对象和非规整数据对象采用S-Type类型。
+
+下图阐明了RV32T/RV64T的权能指针格式，表1解释了权能各个字段的含义。
+
+{empty} +
+[%autowidth.stretch,float="center",align="center",cols="26*"]
+|===
+  26+^|*RV32T权能指针格式 （32比特线性地址）*
+      |31   |30|29|28|27|26|25 |24|23|22   |21|20|19|18 |17|16|15|...|10|9|8|7|...|2|1|0   
+   1+^|0 6+^|p'6            3+^|otype'3 4+^|cE       6+^|B'9           6+^|T’9    
+   26+^|Address
+|===
+
+|===
+  26+^|*RV32T描述符指针格式 （32比特线性地址）*
+      |31   |30|29|28|27|26|25 |24|23|22   |21      |20|19|18|17|16|15|...|10|9|8|7|...|2|1|0   
+   1+^|0 6+^|p'6            3+^|otype'3    1+^|0 5+^|E'5          10+^|reserved'16    
+   26+^|Address
+|===
+
+
+== 描述符表和描述附表旁视缓冲器
+
+下表表示RV32T和RV64T的描述符格式，包括Bound, Base，两部分，base部分必须是权能指针类型。Bound部分如果全0，表示该描述符无效。
+
+处理器应该包含至少8条目的DLB，如果权能指针是描述符表格式，则采用Centroid动态的查找DLB，如果查找不到（Miss），则发出DLB例外。
+
+如果发生例外，应该查找malloc中的对象描述符表ODT，重新插入DLB中。如果对象被释放（Free），应该将DLB和ODT中的表项同时设置无效。
+
+|===
+  26+^|*RV32T描述符格式 （24比特边界地址）*
+      |31   |30|29|28|27|26|25 |24|23|22   |21      |20|19|18|17|16|15|...|10|9|8|7|...|2|1|0   
+   1+^|0 6+^|p'6            3+^|otype'3    1+^|1 5+^|E'5          10+^|baseHi'16
+   8+^|baseLo'8               18+^|bound    
+|===
+
+SCR寄存器MDDLBC
+
+.Currently allocated SCR addresses for Cheriot-Centroid.
+[float="center",align="center",cols="<10%,<10%,<20%,<60%",options="header"]
+|===
+|Number |Privilege |Name |Description
+4+^|Machine Data Descriptor SCR
+
+|27 |MRW |MDDLBC  | Machine Data Descriptor Lookaside Buffer Capbility，通用描述符寄存器
+
+|===
+
+这两个SCR寄存器，也是DLB的一部分，具备边检检查功能。
+
+参见，cheriot手册第57页表7.2
+
+增加3条描述符表项生成指令和DLB相关指令。
+
+<<<
+== Cheriot-centroid 指令编码
+
+[%autowidth.stretch,float="center",align="center",cols="<4m, >4m, <2m, >3m, <4m, >4m, <4m, >4m, <4m, >4m, <4m, >4m, <6m"]
+|===
+    |31          |   25|24  |  20|19  |  15|14  |   12|11      |      7| 6   |   0|
+13+^|*RV32T Base Instruction Set*
+ 2+^|0001001        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|CFENCE.VMA
+ 2+^|0001010        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|CDLBRW
+ 2+^|0000100        2+^|rs2   2+^|cs1   2+^|011    2+^|cd           2+^| 0001111 <|CSetDescr
+ 2+^|0000101        2+^|rs2   2+^|cs1   2+^|011    2+^|cd           2+^| 0001111 <|CSetDescr
+|===
+
+<<<
+== Cheriot-centroid 例外
+ 
+
+* DLB例外，暂时复用BoundsViolation
+
+参见，cheriot手册第59页表7.3
+
+<<<
+== Cheriot-centroid 指令详解
+
+* CSetDescr指令，将cs1作为base，rs2作为bound，生成S-Type权能指针写入cd。base和bound须符合单调性原则是cs1的子集。
+
+* CBuildDescr指令，将cs1作为base，rs2作为bound，生成S-Type权能指针写入cd，同时生成对应描述符写入MDDLBC寄存器中。base和bound须符合单调性原则是cs1的子集。
+
+* CDLBRW指令，将指定的MDDLBC中的写入DLB中，cs1作为权能指针必须Centroid相同。
+
+* CFENCE.VMA指令，执行DLB清除操作（flush），cs1如果是全0，表示清除所有DLB表项，否则只清除cs1指示的DLB表项。
+
+
+== 对象描述符表和描述符旁视缓冲器使用说明
+
+产生DLB描述符缺失例外。根据mtval CSR寄存器中的例外产生地址，软件查找缺失对象描述符
+
+如果需要生成一个新的对象描述符
+
+1. 用CSetAddr生成新的base保存到cs1，将新的bound保存到rs2寄存器中。
+
+2. 使用CSetDescr/CBuildDescr指令生成S-Type的权能指针, cs1是对象的base，rs2是对象的bound，cd是对象的权能指针。保证生成的内存对象是cs1内存对象的子集。
+
+3. 需要软件更新对象描述符表。
+
+4. 将描述符写入MDDLBC SCR寄存器中。（或者用CBuildDescr指令直接写入）
+
+5. 使用CDLBRW指令，将MDDLBC系统全能寄存器插入DLB中。
+
