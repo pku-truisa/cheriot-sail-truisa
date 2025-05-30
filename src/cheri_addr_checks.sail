@@ -185,6 +185,8 @@ function ext_data_get_addr(base_reg : regidx, offset : xlenbits, acc : AccessTyp
   let auth_val = C(base_reg);
   let newAddr = auth_val.address + offset;
   let auth_idx = 0b0 @ base_reg;
+  // let inBounds = inCapBounds(auth_val, newAddr, word_width_bytes(width));
+  let inBounds = if isCapabilityMode(auth_val) then inCapBounds(auth_val, newAddr, word_width_bytes(width)) else inDescrCapBounds(auth_val, newAddr, word_width_bytes(width));
 
   let (have_rqd_load_perm, have_rqd_store_perm) : (bool, bool) = match acc {
     Read(Data)            => (auth_val.permit_load, true                 ),
@@ -204,7 +206,9 @@ function ext_data_get_addr(base_reg : regidx, offset : xlenbits, acc : AccessTyp
     Ext_DataAddr_Error(CapEx_PermitLoadViolation, auth_idx)
   else if not(have_rqd_store_perm) then
     Ext_DataAddr_Error(CapEx_PermitStoreViolation, auth_idx)
-  else if not(inCapBounds(auth_val, newAddr, word_width_bytes(width))) then
+  else if not(isCapabilityMode(auth_val)) & not(hasValidDescriptor(auth_val.E, auth_val.address)) then
+    Ext_DataAddr_Error(CapEx_BoundsViolation, auth_idx)
+  else if not(inBounds) then
     Ext_DataAddr_Error(CapEx_BoundsViolation, auth_idx)
   else
     Ext_DataAddr_OK(newAddr)
