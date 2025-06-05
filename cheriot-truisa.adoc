@@ -63,11 +63,11 @@ TruISA定义了2种类型的权能指针：
 |===
   26+^|*RV32T描述符格式 （24比特边界地址）*
       |31   |30|29 |28|27 |26   |25   |24    |23|22 |21|20|19|18|17 |16|15|...|10|9|8|7|...|2|1|0   
-   1+^|1 7+^|Reserved'7                  18+^|Bound
-   L+^|1 2+^|00 2+^|A  1+^|X 1+^|W 1+^|R 18+^|Base'24    
+   1+^|1 7+^|Reserved'7                  18+^|Bound'24
+   1+^|L 2+^|10 2+^|A  1+^|X 1+^|W 1+^|R 18+^|Base'24    
 |===
 
-SCR寄存器MDDLBC
+SCR寄存器MDDR
 
 .Currently allocated SCR addresses for Cheriot-Centroid.
 [float="center",align="center",cols="<10%,<10%,<20%,<60%",options="header"]
@@ -75,7 +75,7 @@ SCR寄存器MDDLBC
 |Number |Privilege |Name |Description
 4+^|Machine Data Descriptor SCR
 
-|27 |MRW |MDDLBC  | Machine Data Descriptor Lookaside Buffer Capbility，通用描述符寄存器
+|27 |MRW |MDDR  | Machine Data Descriptor Register，通用描述符寄存器
 
 |===
 
@@ -94,8 +94,9 @@ SCR寄存器MDDLBC
 13+^|*RV32T Base Instruction Set*
  2+^|0001001        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TFENCE.VMA
  2+^|0001010        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TDLBRW
- 2+^|0000100        2+^|rs2   2+^|cs1   2+^|011    2+^|cd           2+^| 0001111 <|TSetDescr
- 2+^|0000101        2+^|rs2   2+^|cs1   2+^|011    2+^|cd           2+^| 0001111 <|TBuildDescr
+ 2+^|0001000        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TLX
+ 2+^|0001011        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TSX
+ 2+^|0000010        2+^|rs2   2+^|cs1   2+^|011    2+^|cd           2+^| 0001111 <|TBuildDescr
 |===
 
 <<<
@@ -109,11 +110,9 @@ SCR寄存器MDDLBC
 <<<
 == Cheriot-centroid 指令详解
 
-* TSetDescr指令，将cs1作为base，rs2作为bound，生成S-Type权能指针写入cd。base和bound须符合单调性原则是cs1的子集。
+* TBuildDescr指令，将cs1作为base，rs2作为bound，生成S-Type权能指针写入cd，同时生成对应描述符写入MDDR寄存器中。base和bound须符合单调性原则是cs1的子集。
 
-* TBuildDescr指令，将cs1作为base，rs2作为bound，生成S-Type权能指针写入cd，同时生成对应描述符写入MDDLBC寄存器中。base和bound须符合单调性原则是cs1的子集。
-
-* TDLBRW指令，将指定的MDDLBC中的写入DLB中，cs1作为权能指针必须与MDDLBC的Centroid相同。
+* TDLBRW指令，将指定的MDDR中的写入DLB中，cs1作为权能指针必须与MDDR的Centroid相同。
 
 * TFENCE.VMA指令，执行DLB清除操作（flush），cs1如果是全0，表示清除所有DLB表项，否则只清除cs1指示的DLB表项。
 
@@ -126,11 +125,11 @@ SCR寄存器MDDLBC
 
 1. 用CSetAddr生成新的base保存到cs1，将新的bound保存到rs2寄存器中。
 
-2. 使用TSetDescr/TBuildDescr指令生成S-Type的权能指针, cs1是对象的base，rs2是对象的bound，cd是对象的权能指针。保证生成的内存对象是cs1内存对象的子集。
+2. 使用TBuildDescr指令生成S-Type的权能指针, cs1是对象的base，rs2是对象的bound，cd是对象的权能指针。保证生成的内存对象是cs1内存对象的子集。
 
 3. 需要软件更新对象描述符表。
 
-4. 将描述符写入MDDLBC SCR寄存器中。（或者用TBuildDescr指令直接写入）
+4. 将描述符写入MDDR SCR寄存器中。（或者用TBuildDescr指令直接写入）
 
-5. 使用TDLBRW指令，将MDDLBC系统全能寄存器插入DLB中。
+5. 使用TDLBRW指令，将MDDR系统全能寄存器插入DLB中。
 
