@@ -1,11 +1,11 @@
-[[cheriot-truisa]]
+[[cheriot-centroid]]
 == 简介
 
 小型的嵌入式处理器几乎没给安全特性保留设计空间，而且必须经常运行用不安全语言(如C/C++)编写的代码，同时却越来越多地暴露在充满敌意的互联网上。
 
 Cheriot是最前沿的在指令系统架构上解决内存安全性问题的前沿型研究项目。Cheriot采用CHERI的浮点边界定义方法，对于大内存对象存在内部碎片大的问题，其采用的权能（Capability）机制使得时间型内存安全（如Use-After-Free, UAF）的消除开销不容忽视。
 
-Cheriot-Truisa项目在Cheriot基础上加入基于CentroID标识的内存对象描述符机制，可以有效地解决上述问题。
+Cheriot-centorid项目在Cheriot基础上加入基于CentroID标识的内存对象描述符机制，可以有效地解决上述问题。
 
 系统安全应该满足一下的条件：
 
@@ -15,7 +15,7 @@ Cheriot-Truisa项目在Cheriot基础上加入基于CentroID标识的内存对象
 
 == RV32T/RV64T的权能指针
 
-Cheriot-Truisa的主要增强功能：
+Cheriot-centroid的主要增强功能：
 
 * 增加内存对象描述符的定义。
 * 增加CentroID编码机制，可高效生成对象描述符的标识ID。
@@ -24,9 +24,9 @@ Cheriot-Truisa的主要增强功能：
 * 增加描述符生成和DLB管理的若干条指令
 * 增加DLB缺失的例外处理，复用BoundsViolation
 
-Cheriot-Truisa在PCC等相关的定义、指令和功能上不做任何改变。
+Cheriot-centroid在PCC等相关的定义、指令和功能上不做任何改变。
 
-TruISA定义了2种类型的权能指针：
+Cheriot-centroid定义了2种类型的权能指针：
 
 规整块权能指针（Block-Type, B-Type）：复用Cheriot的定义。用户程序可以通过CSetBound和CSetBoundImm指令设定，需要符合单调性原则。该类型权能指针与cheriot定义相同。
 
@@ -45,6 +45,7 @@ TruISA定义了2种类型的权能指针：
   26+^|Address
 |===
 
+[%autowidth.stretch,float="center",align="center",cols="26*"]
 |===
   26+^|*RV32T描述符指针格式 （32比特线性地址）*
       |31   |30|29|28|27|26|25 |24|23|22   |21   |20|19|18|17|16 |15|...|10|9|8|7|...|2|1|0   
@@ -61,6 +62,7 @@ TruISA定义了2种类型的权能指针：
 
 如果发生例外，应该查找malloc中的对象描述符表ODT，重新插入DLB中。如果对象被释放（Free），应该将DLB和ODT中的表项同时设置无效。
 
+[%autowidth.stretch,float="center",align="center",cols="26*"]
 |===
   26+^|*RV32T描述符格式 （24比特边界地址）*
       |31   |30|29|28|27|26|25 |24    |23|22|21|20|19|18|17|16 |15|...|10|9|8|7|...|2|1|0   
