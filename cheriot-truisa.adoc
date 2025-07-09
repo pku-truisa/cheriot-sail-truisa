@@ -65,9 +65,9 @@ Cheriot-centroid定义了2种类型的权能指针：
 [%autowidth.stretch,float="center",align="center",cols="26*"]
 |===
   26+^|*RV32T描述符格式 （24比特边界地址）*
-      |31   |30|29|28|27|26|25 |24         |23   |22|21|20|19|18|17|16 |15|...|10|9|8|7|...|2|1|0   
-   1+^|1 6+^|p'6            3+^|otype'3 1+^|1 5+^|E'5 10+^|BaseHi'16   
-   8+^|BaseLow'8         18+^|Bound'24
+      |31   |30|29|28|27|26|25 |24 |23|22  |21   |20|19|18|17|16 |15|...|10|9|8|7|...|2|1|0   
+   1+^|1 6+^|p'6            3+^|otype'3 1+^|1 5+^|E'5        10+^|BaseHi'16   
+   8+^|BaseLo'8               18+^|Bound'24
 |===  
 
 SCR寄存器MDDR
@@ -76,13 +76,13 @@ SCR寄存器MDDR
 [float="center",align="center",cols="<10%,<10%,<20%,<60%",options="header"]
 |===
 |Number |Privilege |Name |Description
-4+^|Machine Data Descriptor SCR
+4+^|Machine Data Descriptor Register
 
 |27 |MRW |MDDR  | Machine Data Descriptor Register，通用描述符寄存器
 
 |===
 
-这两个SCR寄存器，也是DLB的一部分，具备边检检查功能。
+这个SCR寄存器，也是DLB的一部分，具备边检检查功能。
 
 参见，cheriot手册第57页表7.2
 
@@ -96,11 +96,11 @@ SCR寄存器MDDR
     |31          |   25|24  |  20|19  |  15|14  |   12|11      |      7| 6   |   0|
 13+^|*RV32T Base Instruction Set*
  2+^|0001001        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TFENCE.VMA
- 2+^|0001010        2+^|scr   2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TDLBRW
- 2+^|0000100        2+^|scr   2+^|rs1   2+^|011    2+^|cd           2+^| 0001111 <|TSetDescrCap
- 2+^|0000101        2+^|rs2   2+^|cs1   2+^|011    2+^|scr          2+^| 0001111 <|TBuildDescr
- 2+^|0000110        2+^|00000 2+^|cs1   2+^|011    2+^|scr          2+^| 0001111 <|TLDescr
- 2+^|0000111        2+^|scr   2+^|cs1   2+^|011    2+^|00000        2+^| 0001111 <|TSDescr
+ 2+^|0001010        2+^|scr2  2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TDLBRW
+ 2+^|0000100        2+^|rs2   2+^|scr1  2+^|011    2+^|cd           2+^| 0001111 <|TSetDescrCap
+ 2+^|0000101        2+^|rs2   2+^|cs1   2+^|011    2+^|scrd         2+^| 0001111 <|TBuildDescr
+ 2+^|0000110        2+^|00000 2+^|cs1   2+^|011    2+^|scrd         2+^| 0001111 <|TLDescr
+ 2+^|0000111        2+^|scr2  2+^|cs1   2+^|011    2+^|00000        2+^| 0001111 <|TSDescr
 |===
 
 <<<
@@ -114,13 +114,13 @@ SCR寄存器MDDR
 <<<
 == Cheriot-centroid 指令详解
 
-* TBuildDescr指令，将cs1作为base，rs2作为bound，生成C-Type权能指针写入scr。base和bound须符合单调性原则是cs1的子集。
+* TBuildDescr指令，将cs1作为base，rs2作为bound，生成描述符写入scr。base和bound须符合单调性原则是cs1的子集。
 
-* TSetDescrCap指令，将scr寄存器中的描述符，生成指向Base地址的权能指针写入cd中。
+* TSetDescrCap指令，将scr寄存器中的描述符，生成指向rs偏移量的权能指针写入cd中， cd.address = scr.base + rs2。
 
 * TLDescr/TSDescr, 针对描述符的Load/store指令，在scr和内存中建立数据传输功能。
 
-* TDLBRW指令，将指定的MDDR中的写入DLB中，cs1作为权能指针必须与MDDR的Centroid相同。
+* TDLBRW指令，将指定的scr中的描述符写入DLB中，cs1作为权能指针必须与MDDR的Centroid相同。
 
 * TFENCE.VMA指令，执行DLB清除操作（flush），cs1如果是全0，表示清除所有DLB表项，否则只清除cs1指示的DLB表项。
 
@@ -133,11 +133,13 @@ SCR寄存器MDDR
 
 1. 用CSetAddr生成新的base保存到cs1，将新的bound保存到rs2寄存器中。
 
-2. 使用TBuildDescr指令生成C-Type的权能指针, cs1是对象的base，rs2是对象的bound，cd是对象的权能指针。保证生成的内存对象是cs1内存对象的子集。
+2. 使用TBuildDescr指令生成描述符, cs1是对象的base，rs2是对象的bound，scrd是对象的描述符。保证生成的内存对象是cs1内存对象的子集。
 
 3. 需要软件更新对象描述符表。
 
-4. 将描述符写入MDDR SCR寄存器中。（或者用TBuildDescr指令直接写入）
+4. 使用TDLBRW指令，将MDDR系统全能寄存器插入DLB中。
 
-5. 使用TDLBRW指令，将MDDR系统全能寄存器插入DLB中。
+5. 使用TSetDescrCap指令生成描述符权能指针。
+
+以上文档中的，scr在cheriot-centroid项目中，专指MDDR（如果出现其他scr寄存器号，发出例外）
 
