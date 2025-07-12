@@ -13,7 +13,7 @@ Cheriot-centorid项目在Cheriot基础上加入基于CentroID标识的内存对�
 * 空间安全性 Saptially Safe 对内存的引用授权访问的内存位置集在引用构建时确定。
 * 时间安全性 Temporal Safe 对内存区域的引用在内存被重新用于不同分配时将不再可用。
 
-== RV32T/RV64T的权能指针
+== RV32T的权能指针
 
 Cheriot-centroid的主要增强功能：
 
@@ -34,7 +34,7 @@ Cheriot-centroid定义了2种类型的权能指针：
 
 权能指针类型算则的基本原则是，对小数据对象（设定一定的阈值）和规整数据对象采用B-Type指针类型，对大数据对象和非规整数据对象采用C-Type类型。
 
-下图阐明了RV32T/RV64T的权能指针格式，表1解释了权能各个字段的含义。
+下图阐明了RV32T的权能指针格式，表1解释了权能各个字段的含义。
 
 {empty} +
 [%autowidth.stretch,float="center",align="center",cols="26*"]
@@ -56,9 +56,9 @@ Cheriot-centroid定义了2种类型的权能指针：
 
 == 描述符表和描述附表旁视缓冲器
 
-下表表示RV32T和RV64T的描述符格式，包括Bound, Base，两部分，base部分必须是权能指针类型。Bound部分如果全0，表示该描述符无效。
+下表表示RV32T的描述符格式，包括Base和End两部分，End = Top - 1, End全0表示无效描述符。
 
-处理器应该包含至少8条目的DLB，如果权能指针是描述符表格式，则采用Centroid动态的查找DLB，如果查找不到（Miss），则发出DLB例外。
+如果权能指针是描述符表格式，则采用Centroid动态的查找DLB，如果查找不到（Miss），则发出DLB例外。
 
 如果发生例外，应该查找malloc中的对象描述符表ODT，重新插入DLB中。如果对象被释放（Free），应该将DLB和ODT中的表项同时设置无效。
 
@@ -67,7 +67,7 @@ Cheriot-centroid定义了2种类型的权能指针：
   26+^|*RV32T描述符格式 （24比特边界地址）*
       |31   |30|29|28|27|26|25 |24 |23|22  |21   |20|19|18|17|16 |15|...|10|9|8|7|...|2|1|0   
    1+^|1 6+^|p'6            3+^|otype'3 1+^|1 5+^|E'5        10+^|BaseHi'16   
-   8+^|BaseLo'8               18+^|Top'24
+   8+^|BaseLo'8                18+^|End'24
 |===  
 
 SCR寄存器MDDR
@@ -114,7 +114,7 @@ SCR寄存器MDDR
 <<<
 == Cheriot-centroid 指令详解
 
-* TBuildDescr指令，将cs1作为base，rs2作为bound，生成描述符写入scr。base和bound须符合单调性原则是cs1的子集。
+* TBuildDescr指令，将cs1作为base，rs2作为End，生成描述符写入scr。base和End须符合单调性原则是cs1的子集。
 
 * TSetDescrCap指令，将scr寄存器中的描述符，生成指向rs偏移量的权能指针写入cd中， cd.address = scr.base + rs2。
 
@@ -131,9 +131,9 @@ SCR寄存器MDDR
 
 如果需要生成一个新的对象描述符
 
-1. 用CSetAddr生成新的base保存到cs1，将新的bound保存到rs2寄存器中。
+1. 用CSetAddr生成新的base保存到cs1，将新的End保存到rs2寄存器中。
 
-2. 使用TBuildDescr指令生成描述符, cs1是对象的base，rs2是对象的bound，scrd是对象的描述符。保证生成的内存对象是cs1内存对象的子集。
+2. 使用TBuildDescr指令生成描述符, cs1是对象的base，rs2是对象的End，scrd是对象的描述符。保证生成的内存对象是cs1内存对象的子集。
 
 3. 需要软件更新对象描述符表。
 
