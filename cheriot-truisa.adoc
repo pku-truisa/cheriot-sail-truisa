@@ -42,22 +42,22 @@ Cheriot-centroid定义了2种类型的权能指针：
   26+^|*RV32T权能指针格式 （32比特线性地址）*
       |31   |30|29|28|27|26|25 |24|23|22   |21|20|19|18 |17|16|15|...|10|9|8|7|...|2|1|0   
    1+^|0 6+^|p'6            3+^|otype'3 4+^|cE'4     6+^|B'9           6+^|T’9    
-  8+^|Identification Code  18+^|Address
+  8+^|Identification Code  18+^|Address'24
 |===
 
 [%autowidth.stretch,float="center",align="center",cols="16*"]
 |===
   16+^|*RV32T描述符（32比特线性地址）*
-      |15       |14      |13|12|11|10|9|8|7|6    |5    |4|3|2|1|0   
-   1+^|Valid 1+^|Free 8+^|Identification Code 1+^|1 5+^|E'5
+      |15    |14|13|12|11|10 |9    |8       |7|6|5|4|3|2|1|0   
+   1+^|1 5+^|E'5          1+^|1 1+^|Free 8+^|Identification Code 
 |===
 
 [%autowidth.stretch,float="center",align="center",cols="26*"]
 |===
   26+^|*RV32T描述符指针格式 （32比特线性地址）*
       |31   |30|29|28|27|26|25 |24|23|22   |21   |20|19|18|17|16 |15|...|10|9    |8|7|...|2|1|0   
-   1+^|1 6+^|p'6            3+^|otype'3 1+^|0 5+^|E'5         5+^|reserved'10  5+^|ID’8  
-  26+^|Address
+   1+^|1 6+^|p'6            3+^|otype'3 1+^|0 5+^|E'5        10+^|reserved'16  
+   8+^|Identification Code  18+^|Address'24
 |===
 
 
