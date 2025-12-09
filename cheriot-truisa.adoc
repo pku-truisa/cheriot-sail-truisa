@@ -54,9 +54,9 @@ Cheriot-centroid定义了2种类型的权能指针：
 
 [%autowidth.stretch,float="center",align="center",cols="16*"]
 |===
-  16+^|*RV32T描述符（32比特线性地址）*
+  16+^|*RV32T描述符格式*
       |15    |14|13|12|11|10 |9    |8       |7|6|5|4|3|2|1|0   
-   1+^|1 5+^|E'5          1+^|1 1+^|Free 8+^|Identification Code 
+   1+^|1 5+^|E'5          1+^|Valid 1+^|Free 8+^|Identification Code 
 |===
 
 [%autowidth.stretch,float="center",align="center",cols="26*"]
@@ -110,7 +110,7 @@ SCR寄存器MDDR
     |31          |   25|24  |  20|19  |  15|14  |   12|11      |      7| 6   |   0|
 13+^|*RV32T Base Instruction Set*
  2+^|0001001        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TFENCE.VMA
- 2+^|0001010        2+^|scr2  2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TDLBRW
+ 2+^|0001010        2+^|00000 2+^|cs1   2+^|000    2+^|00000        2+^| 0001111 <|TLDescr
  2+^|0000100        2+^|rs2   2+^|scr1  2+^|011    2+^|cd           2+^| 0001111 <|TSetDescrCap
  2+^|0000101        2+^|rs2   2+^|cs1   2+^|011    2+^|scrd         2+^| 0001111 <|TBuildDescr
  2+^|0000110        2+^|00000 2+^|cs1   2+^|011    2+^|scrd         2+^| 0001111 <|TLDescr
